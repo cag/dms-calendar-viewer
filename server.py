@@ -25,7 +25,7 @@ def grab_event_info_from_link(link, time_re):
                      start_time=time_match.group('start_time'),
                      end_time=time_match.group('end_time'),
                      where=next(where.stripped_strings),
-                     info_html=str(soup)[:14])
+                     info_html=str(soup))
 
 @app.route("/")
 def todays_events_info():
@@ -50,7 +50,7 @@ def todays_events_info():
             event_links.append(child.find('a', href=EVENT_LINK_HREF_RE))
     # return '<br>'.join(APP_URL + link['href'] for link in event_links)
     return render_template('index.html', date=current_date,
-                                         events=(grab_event_info_from_link(l, time_re) for l in event_links))
+                                         events=[grab_event_info_from_link(l, time_re) for l in event_links])
 
 if __name__ == '__main__':
     # app.run()
