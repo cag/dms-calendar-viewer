@@ -17,7 +17,7 @@ def grab_event_info_from_link(link):
     soup = BeautifulSoup(res.text, "html.parser")
 
     eid = EVENT_LINK_HREF_RE.match(href).group('id')
-    # einfo = None
+    einfo = None
     return eid, einfo
 
 @app.route("/")
