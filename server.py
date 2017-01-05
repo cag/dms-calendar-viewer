@@ -11,8 +11,12 @@ APP_URL = 'https://calendar.dallasmakerspace.org'
 
 def grab_event_info_from_link(link):
     href = link['href']
+
+    res = requests.get(APP_URL + href)
+    res.raise_for_status()
+    soup = BeautifulSoup(res.text, "html.parser")
+
     eid = EVENT_LINK_HREF_RE.match(href).group('id')
-    einfo = requests.get(APP_URL + href).text[:10]
     # einfo = None
     return eid, einfo
 
@@ -28,6 +32,7 @@ def todays_events_info():
 
     grab_events = False
     event_links = []
+    # Get today's events
     for child in soup.find(True, 'event-list')(True, recursive=False):
         if 'date-break' in child['class']:
             listing_date = datetime.strptime('{} {}'.format(child.string.strip(), current_year), '%A, %B %d %Y').date()
