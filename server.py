@@ -1,30 +1,39 @@
 #!/bin/env python
 import re
 import requests
+from collections import OrderedDict, namedtuple
 from datetime import datetime
 from bs4 import BeautifulSoup
-from flask import Flask, jsonify
+from flask import Flask, jsonify, render_template
 
 app = Flask(__name__)
 EVENT_LINK_HREF_RE = re.compile(r'^/events/view/(?P<id>\d+)$')
 APP_URL = 'https://calendar.dallasmakerspace.org'
+EventInfo = namedtuple('EventInfo', 'id title start_time end_time where info_html')
 
-def grab_event_info_from_link(link):
+def grab_event_info_from_link(link, time_re):
     href = link['href']
 
     res = requests.get(APP_URL + href)
     res.raise_for_status()
-    soup = BeautifulSoup(res.text, "html.parser")
+    soup = BeautifulSoup(res.text, "html.parser").find(True, 'events')
+    time_match = time_re.match(soup.find('td', string=time_re).string)
+    where = soup.find('td', string='Where').find_next_sibling('td')
 
-    eid = EVENT_LINK_HREF_RE.match(href).group('id')
-    einfo = None
-    return eid, einfo
+    return EventInfo(id=EVENT_LINK_HREF_RE.match(href).group('id'),
+                     title=soup.find(True, 'page-header').find('h1').string.strip(),
+                     start_time=time_match.group('start_time'),
+                     end_time=time_match.group('end_time'),
+                     where=next(where.stripped_strings),
+                     info_html=str(soup)[:14])
 
 @app.route("/")
 def todays_events_info():
     today = datetime.today()
     current_year = today.year
     current_date = today.date()
+
+    time_re = re.compile(r'\s*%s\s+%d\s+(?P<start_time>[\w:]+)\s+—\s+(?P<end_time>[\w:]+)' % (current_date.strftime(r'%a\s+%b'), current_date.day), re.M)
 
     res = requests.get(APP_URL + '/events/embed')
     res.raise_for_status()
@@ -40,10 +49,9 @@ def todays_events_info():
         elif grab_events:
             event_links.append(child.find('a', href=EVENT_LINK_HREF_RE))
     # return '<br>'.join(APP_URL + link['href'] for link in event_links)
-    d = { '1-2-3': {'foo': 'bar'}}
-    return jsonify(date=current_date,
-                   events=dict(map(grab_event_info_from_link, event_links)))
+    return render_template('index.html', date=current_date,
+                                         events=(grab_event_info_from_link(l, time_re) for l in event_links))
 
 if __name__ == '__main__':
     # app.run()
-    return_info()
+    pass
