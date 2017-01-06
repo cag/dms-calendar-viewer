@@ -277,6 +277,9 @@ main {
         <div>{{event.start_time}} — {{event.end_time}}, <em>{{event.where}}</em></div>
     </div>
     {% endfor %}
+    {% if not events %}
+    <div>No events scheduled for today. Be sure to check out <strong>dallasmakerspace.org</strong> for more information.</div>
+    {% endif %}
 </section>
 <section class="events-info">
     {% for event in events %}
